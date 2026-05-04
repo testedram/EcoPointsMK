@@ -1,9 +1,9 @@
 import { getActiveSession } from '../../../lib/db';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
   const { id } = req.query;
-  const session = getActiveSession(id);
+  const session = await getActiveSession(id);
   const now = Date.now();
   if (session) {
     const remaining = Math.max(0, 30 - Math.floor((now - session.startedAt) / 1000));
