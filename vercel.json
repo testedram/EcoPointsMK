@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "env": {
+    "JWT_SECRET": "@jwt_secret",
+    "ARDUINO_SECRET": "@arduino_secret"
+  }
+}
