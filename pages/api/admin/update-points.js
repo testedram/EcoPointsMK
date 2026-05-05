@@ -1,4 +1,4 @@
-import { getUserById, updateUser } from '@/lib/db';
+import { getUserById, updateUser } from '../../../lib/db';
 
 export default async function handler(req, res) {
   if (req.headers['x-admin-secret'] !== process.env.ADMIN_SECRET) {
