@@ -1,14 +1,10 @@
-import { getUserById, deleteUser } from '../../../lib/db';
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET;
+import { deleteUser } from '../../../lib/db';
 
 export default async function handler(req, res) {
-  if (req.method !== 'DELETE') {
-    return res.status(405).end();
-  }
+  if (req.method !== 'DELETE') return res.status(405).end();
 
-  const secret = req.headers['x-admin-secret'];
-  if (secret !== ADMIN_SECRET) {
+  const cookie = req.headers.cookie || '';
+  if (!cookie.includes('admin_auth=true')) {
     return res.status(401).json({ error: 'Неовластен пристап' });
   }
 
@@ -18,12 +14,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'userId е потребен' });
   }
 
-  const user = await getUserById(userId);
-  if (!user) {
+  const ok = await deleteUser(userId);
+
+  if (!ok) {
     return res.status(404).json({ error: 'Корисникот не постои' });
   }
-
-  await deleteUser(userId);
 
   res.json({ ok: true });
 }
