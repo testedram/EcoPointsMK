@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 
-const ADMIN_SECRET = 'admin-secret-2024';
-
 export default function AdminPage() {
+  const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET || 'admin-secret-2024';
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -102,7 +101,6 @@ export default function AdminPage() {
       <div className="orb orb1" /><div className="orb orb2" />
       <div style={{ position: 'relative', zIndex: 1 }}>
 
-        {/* Topbar */}
         <nav className="topbar">
           <div className="topbar-logo">
             <div className="logo-icon">♻</div>
@@ -132,7 +130,6 @@ export default function AdminPage() {
             </p>
           </div>
 
-          {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 28 }}>
             {[
               { label: 'Вкупно корисници', value: users.length, icon: '👥' },
@@ -147,7 +144,6 @@ export default function AdminPage() {
             ))}
           </div>
 
-          {/* Users table */}
           <div className="card">
             <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>
               Листа на корисници
@@ -165,53 +161,44 @@ export default function AdminPage() {
                   background: 'rgba(61,220,94,0.03)',
                   border: '1px solid rgba(61,220,94,0.1)',
                 }}>
-                  {/* Rank + Avatar */}
                   <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, color: 'var(--muted)', width: 24, fontSize: 13 }}>
                     #{i + 1}
                   </div>
                   <div className="avatar" style={{ width: 38, height: 38, fontSize: 13, flexShrink: 0 }}>
                     {u.username.slice(0, 2).toUpperCase()}
                   </div>
-
-                  {/* Name + Points */}
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 500 }}>{u.username}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
                       Регистриран: {u.createdAt ? new Date(u.createdAt).toLocaleDateString('mk-MK') : 'N/A'}
                     </div>
                   </div>
-
-                  {/* Current points */}
                   <div style={{ textAlign: 'center', minWidth: 70 }}>
                     <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 22, fontWeight: 800, color: 'var(--green)' }}>
                       {u.points}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--muted)' }}>поени</div>
                   </div>
-
-                  {/* Quick buttons */}
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     <button
                       onClick={() => addPoints(u.id, 1)}
                       style={{
-                        width: 34, height: 34, borderRadius: 9, border: '1px solid rgba(61,220,94,0.3)',
+                        width: 34, height: 34, borderRadius: 9,
+                        border: '1px solid rgba(61,220,94,0.3)',
                         background: 'rgba(61,220,94,0.08)', color: 'var(--green)',
-                        fontSize: 18, cursor: 'pointer', fontWeight: 700, transition: 'all .2s'
+                        fontSize: 18, cursor: 'pointer', fontWeight: 700
                       }}
-                      title="+1 поен"
                     >+</button>
                     <button
                       onClick={() => addPoints(u.id, -1)}
                       style={{
-                        width: 34, height: 34, borderRadius: 9, border: '1px solid rgba(255,107,107,0.3)',
+                        width: 34, height: 34, borderRadius: 9,
+                        border: '1px solid rgba(255,107,107,0.3)',
                         background: 'rgba(255,107,107,0.08)', color: 'var(--red)',
-                        fontSize: 18, cursor: 'pointer', fontWeight: 700, transition: 'all .2s'
+                        fontSize: 18, cursor: 'pointer', fontWeight: 700
                       }}
-                      title="-1 поен"
                     >−</button>
                   </div>
-
-                  {/* Custom points input */}
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
                     <input
                       type="number"
@@ -255,4 +242,4 @@ export default function AdminPage() {
       )}
     </>
   );
-}v
+}
