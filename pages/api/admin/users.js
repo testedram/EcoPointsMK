@@ -1,19 +1,24 @@
-import { getUsers } from '../../../lib/db';
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'admin-secret-2024';
+import { kv } from '@vercel/kv';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).end();
-  
   const secret = req.headers['x-admin-secret'];
-  if (secret !== ADMIN_SECRET) {
-    return res.status(401).json({ error: 'Неовластен пристап' });
+
+  if (secret !== process.env.ADMIN_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const users = await getUsers();
-  const safe = users
-    .map(u => ({ id: u.id, username: u.username, points: u.points, createdAt: u.createdAt }))
-    .sort((a, b) => b.points - a.points);
-  
-  res.json({ users: safe });
+  try {
+    const keys = await kv.keys('user:*');
+
+    const users = await Promise.all(
+      keys.map((k) => kv.get(k))
+    );
+
+    return res.status(200).json({
+      users: users.filter(Boolean)
+    });
+
+  } catch (err) {
+    return res.status(500).json({ error: 'Server error' });
+  }
 }
