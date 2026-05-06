@@ -12,13 +12,11 @@ export default async function handler(req, res) {
 
   const sessionId = randomBytes(3).toString("hex").toUpperCase();
 
-  const session = {
+  await createSession({
     sessionId,
     userId,
     startedAt: Date.now()
-  };
-
-  await createSession(session);
+  });
 
   return res.json({
     success: true,
