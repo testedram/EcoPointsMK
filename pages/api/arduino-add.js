@@ -1,26 +1,36 @@
-import { getSession } from "@/lib/sessionStore";
-import { updateUserPoints } from "@/lib/db";
+import { getSession, getUserById, updateUser } from "../../lib/db";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
   const { sessionId, points } = req.body;
 
-  const session = getSession();
+  if (!sessionId || !points) {
+    return res.status(400).json({ error: "Missing sessionId or points" });
+  }
+
+  const session = await getSession(sessionId);
 
   if (!session) {
-    return res.status(400).json({ error: "No active session" });
+    return res.status(400).json({ error: "Invalid session" });
   }
 
-  if (session.sessionId !== sessionId) {
-    return res.status(403).json({ error: "Invalid sessionId" });
+  const userId = session.userId;
+
+  const user = await getUserById(userId);
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
   }
 
-  await updateUserPoints(session.userId, points);
+  const updated = await updateUser(userId, {
+    points: (user.points || 0) + Number(points)
+  });
 
   return res.json({
     success: true,
-    userId: session.userId,
-    addedPoints: points
+    userId,
+    added: Number(points),
+    user: updated
   });
 }
