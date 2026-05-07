@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 
 export default function BinPage() {
   const [started, setStarted] = useState(false);
@@ -40,14 +41,19 @@ export default function BinPage() {
   return (
     <>
       <Head><title>Канта #1 · Smart Eco Points</title></Head>
-
       <div className="orb orb1" /><div className="orb orb2" />
-
       <div className="page-wrap">
+
         <nav className="topbar">
-          <div className="topbar-logo">
+          <Link href="/dashboard" className="topbar-logo">
             <div className="logo-icon">♻</div>
             Smart Eco Points
+          </Link>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <Link href="/dashboard" style={{ padding: '7px 14px', borderRadius: 10, fontSize: 13, color: 'var(--muted)' }}>🏠 Почетна</Link>
+            <Link href="/bin/1" style={{ padding: '7px 14px', borderRadius: 10, fontSize: 13, color: 'var(--green)', background: 'rgba(61,220,94,0.08)', border: '1px solid rgba(61,220,94,0.2)' }}>🗑️ Канта</Link>
+            <Link href="/leaderboard" style={{ padding: '7px 14px', borderRadius: 10, fontSize: 13, color: 'var(--muted)' }}>🏆 Leaderboard</Link>
+            <Link href="/rewards" style={{ padding: '7px 14px', borderRadius: 10, fontSize: 13, color: 'var(--muted)' }}>🎁 Награди</Link>
           </div>
         </nav>
 
@@ -117,8 +123,8 @@ export default function BinPage() {
             {[
               ['1️⃣', 'Кликни "Започни сесија"'],
               ['2️⃣', 'Фрли предмет во кантата'],
-              ['3️⃣', 'Arduino детектира → испраќа сигнал'],
-              ['4️⃣', 'Серверот додава +1 поен'],
+              ['3️⃣', 'Arduino детектира → испраќа ITEM_DETECTED'],
+              ['4️⃣', 'Серверот додава +1 поен (cooldown: 3с)'],
               ['5️⃣', 'Кликни "Заврши" или почекај 30с'],
             ].map(([num, text]) => (
               <div key={num} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 10 }}>
