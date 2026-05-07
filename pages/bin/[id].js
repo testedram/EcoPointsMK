@@ -1,82 +1,133 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
-import Link from 'next/link';
+import Topbar from '../../components/Topbar';
+import useAuth from '../../hooks/useAuth';
 
 export default function BinPage() {
-  const [started, setStarted] = useState(false);
+  const router = useRouter();
+  const { id } = router.query;
+  const { user, token, loading, refreshUser } = useAuth();
+
+  const [binStatus, setBinStatus] = useState(null);
+  const [mySession, setMySession] = useState(null);
   const [countdown, setCountdown] = useState(30);
   const [toast, setToast] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const timerRef = useRef(null);
+  const pollRef = useRef(null);
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   }
 
-  function startSession() {
-    setStarted(true);
-    setCountdown(30);
-    showToast('Сесијата е активирана! 🌱');
+  async function fetchBinStatus() {
+    if (!id) return;
+    const res = await fetch(`/api/bin/${id}`);
+    const data = await res.json();
+    setBinStatus(data);
+    if (data.active && mySession && data.sessionId === mySession.id) {
+      setCountdown(data.remaining);
+      if (data.remaining <= 0) {
+        setMySession(null);
+        showToast('Сесијата истече (30 секунди)', 'error');
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (!id || !user) return;
+    fetchBinStatus();
+    pollRef.current = setInterval(() => {
+      fetchBinStatus();
+      refreshUser();
+    }, 2000);
+    return () => clearInterval(pollRef.current);
+  }, [id, user, mySession]);
+
+  // countdown timer
+  useEffect(() => {
+    if (!mySession) { clearInterval(timerRef.current); return; }
     timerRef.current = setInterval(() => {
       setCountdown(c => {
-        if (c <= 1) {
-          clearInterval(timerRef.current);
-          setStarted(false);
-          showToast('Сесијата истече!', 'error');
-          return 0;
-        }
+        if (c <= 1) { clearInterval(timerRef.current); setMySession(null); showToast('Сесијата истече!', 'error'); return 0; }
         return c - 1;
       });
     }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [mySession]);
+
+  async function startSession() {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/start-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ binId: id })
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error, 'error'); return; }
+      setMySession(data.session);
+      setCountdown(30);
+      showToast('Сесијата е активирана! 🌱 Рециклирај!');
+      fetchBinStatus();
+    } finally { setActionLoading(false); }
   }
 
-  function endSession() {
-    clearInterval(timerRef.current);
-    setStarted(false);
-    showToast('Сесијата е завршена ✅');
+  async function endSession() {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/end-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ binId: id })
+      });
+      if (res.ok) {
+        setMySession(null);
+        showToast('Сесијата е завршена ✅');
+        refreshUser();
+        fetchBinStatus();
+      }
+    } finally { setActionLoading(false); }
   }
 
-  const progressPct = (countdown / 30) * 100;
+  if (loading || !user) return null;
+
+  const isMine = mySession != null;
+  const isOthers = binStatus?.active && !isMine;
+  const progressPct = isMine ? (countdown / 30) * 100 : 0;
 
   return (
     <>
-      <Head><title>Канта #1 · Smart Eco Points</title></Head>
+      <Head><title>Канта #{id} · Smart Eco Points</title></Head>
       <div className="orb orb1" /><div className="orb orb2" />
       <div className="page-wrap">
-
-        <nav className="topbar">
-          <Link href="/dashboard" className="topbar-logo">
-            <div className="logo-icon">♻</div>
-            Smart Eco Points
-          </Link>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <Link href="/dashboard" style={{ padding: '7px 14px', borderRadius: 10, fontSize: 13, color: 'var(--muted)' }}>🏠 Почетна</Link>
-            <Link href="/bin/1" style={{ padding: '7px 14px', borderRadius: 10, fontSize: 13, color: 'var(--green)', background: 'rgba(61,220,94,0.08)', border: '1px solid rgba(61,220,94,0.2)' }}>🗑️ Канта</Link>
-            <Link href="/leaderboard" style={{ padding: '7px 14px', borderRadius: 10, fontSize: 13, color: 'var(--muted)' }}>🏆 Leaderboard</Link>
-            <Link href="/rewards" style={{ padding: '7px 14px', borderRadius: 10, fontSize: 13, color: 'var(--muted)' }}>🎁 Награди</Link>
-          </div>
-        </nav>
-
+        <Topbar user={user} />
         <main style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px' }}>
 
           <div style={{ marginBottom: 28, textAlign: 'center' }}>
-            <h1 style={{ fontFamily: 'Syne,sans-serif', fontSize: 28, fontWeight: 800 }}>🗑️ Паметна Канта #1</h1>
+            <h1 style={{ fontFamily: 'Syne,sans-serif', fontSize: 28, fontWeight: 800 }}>🗑️ Паметна Канта #{id}</h1>
             <p style={{ color: 'var(--muted)', marginTop: 6 }}>Активирај сесија, фрли предмет, освои поен</p>
           </div>
 
+          {/* Status card */}
           <div className="card" style={{ textAlign: 'center', marginBottom: 20 }}>
+            {/* Status indicator */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
-              <div style={{
+              <div className={isMine ? 'pulse' : ''} style={{
                 width: 10, height: 10, borderRadius: '50%',
-                background: started ? 'var(--green)' : 'var(--muted2)',
-                animation: started ? 'pulse 1.5s ease-in-out infinite' : 'none'
+                background: isMine ? 'var(--green)' : isOthers ? 'var(--red)' : 'var(--muted2)',
+                boxShadow: isMine ? '0 0 0 0 rgba(61,220,94,.4)' : 'none',
+                animation: isMine ? 'pulse 1.5s ease-in-out infinite' : 'none'
               }} />
               <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15 }}>
-                {started ? '● АКТИВНА СЕСИЈА' : '○ СЛОБОДНА'}
+                {isMine ? '● АКТИВНА СЕСИЈА' : isOthers ? '● ЗАФАТЕНА' : '○ СЛОБОДНА'}
               </span>
             </div>
 
-            {started && (
+            {/* Countdown circle */}
+            {isMine && (
               <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 20px' }}>
                 <svg width="140" height="140" style={{ transform: 'rotate(-90deg)' }}>
                   <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(61,220,94,0.1)" strokeWidth="8" />
@@ -100,24 +151,41 @@ export default function BinPage() {
               </div>
             )}
 
+            {/* Message */}
             <p style={{ fontSize: 15, color: 'var(--muted)', marginBottom: 24 }}>
-              {started
-                ? '✅ Сесија активна! Фрли предмет во кантата!'
-                : 'Кликни "Започни" за да активираш сесија (30 секунди)'}
+              {isMine
+                ? `✅ Сесија активна! Фрли предмет во кантата и Arduino ќе додаде поен.`
+                : isOthers
+                  ? `⛔ Кантата е зафатена од "${binStatus.username}". Почекај да заврши.`
+                  : `Кликни "Започни" за да активираш сесија (30 секунди)`}
             </p>
 
-            {!started && (
-              <button className="btn btn-primary" onClick={startSession} style={{ fontSize: 17, padding: '16px 40px' }}>
-                ▶ Започни сесија
+            {/* Action button */}
+            {!isMine && !isOthers && (
+              <button className="btn btn-primary" onClick={startSession} disabled={actionLoading} style={{ fontSize: 17, padding: '16px 40px' }}>
+                {actionLoading ? '⏳ ...' : '▶ Започни сесија'}
               </button>
             )}
-            {started && (
-              <button className="btn btn-danger" onClick={endSession} style={{ fontSize: 16, padding: '14px 32px' }}>
-                ■ Заврши сесија
+            {isMine && (
+              <button className="btn btn-danger" onClick={endSession} disabled={actionLoading} style={{ fontSize: 16, padding: '14px 32px' }}>
+                {actionLoading ? '⏳ ...' : '■ Заврши сесија'}
               </button>
             )}
           </div>
 
+          {/* Points display */}
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 12, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Твои поени</div>
+            <div className="pts-big">{user.points}</div>
+            <div style={{ marginTop: 14 }}>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${Math.min(100, (user.points / 100) * 100)}%` }} />
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>{Math.max(0, 100 - user.points)} поени до бесплатно кафе ☕</div>
+            </div>
+          </div>
+
+          {/* How it works */}
           <div className="card" style={{ marginTop: 20 }}>
             <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, marginBottom: 16 }}>Kako работи?</div>
             {[
@@ -137,7 +205,10 @@ export default function BinPage() {
         </main>
       </div>
 
-      {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
+      {/* Toast */}
+      {toast && (
+        <div className={`toast toast-${toast.type}`}>{toast.msg}</div>
+      )}
     </>
   );
 }
