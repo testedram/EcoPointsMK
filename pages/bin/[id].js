@@ -6,9 +6,9 @@ import useAuth from '../../hooks/useAuth';
 
 export default function BinPage() {
   const router = useRouter();
-  const { id } = router.query;
   const { user, token, loading, refreshUser } = useAuth();
 
+  const [binId, setBinId] = useState(null);
   const [binStatus, setBinStatus] = useState(null);
   const [mySession, setMySession] = useState(null);
   const [countdown, setCountdown] = useState(30);
@@ -17,15 +17,23 @@ export default function BinPage() {
   const timerRef = useRef(null);
   const pollRef = useRef(null);
 
+  // Земи го ID од URL директно
+  useEffect(() => {
+    if (router.isReady) {
+      const id = router.query.id || window.location.pathname.split('/').pop();
+      setBinId(id);
+    }
+  }, [router.isReady, router.query]);
+
   function showToast(msg, type = 'success') {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   }
 
   async function fetchBinStatus() {
-    if (!id) return;
+    if (!binId) return;
     try {
-      const res = await fetch(`/api/bin/${id}`);
+      const res = await fetch(`/api/bin/${binId}`);
       const data = await res.json();
       setBinStatus(data);
       if (data.active && mySession && data.sessionId === mySession.id) {
@@ -39,15 +47,14 @@ export default function BinPage() {
   }
 
   useEffect(() => {
-    if (!router.isReady) return;
-    if (!user) return;
+    if (!binId || !user) return;
     fetchBinStatus();
     pollRef.current = setInterval(() => {
       fetchBinStatus();
       refreshUser();
     }, 2000);
     return () => clearInterval(pollRef.current);
-  }, [router.isReady, id, user, mySession]);
+  }, [binId, user, mySession]);
 
   useEffect(() => {
     if (!mySession) { clearInterval(timerRef.current); return; }
@@ -66,13 +73,14 @@ export default function BinPage() {
   }, [mySession]);
 
   async function startSession() {
-    if (!id) { showToast('ID не е вчитан, обиди се повторно', 'error'); return; }
+    const currentBinId = binId || window.location.pathname.split('/').pop();
+    if (!currentBinId) { showToast('Грешка со ID', 'error'); return; }
     setActionLoading(true);
     try {
       const res = await fetch('/api/start-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ binId: id })
+        body: JSON.stringify({ binId: currentBinId })
       });
       const data = await res.json();
       if (!res.ok) { showToast(data.error, 'error'); return; }
@@ -84,12 +92,13 @@ export default function BinPage() {
   }
 
   async function endSession() {
+    const currentBinId = binId || window.location.pathname.split('/').pop();
     setActionLoading(true);
     try {
       const res = await fetch('/api/end-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ binId: id })
+        body: JSON.stringify({ binId: currentBinId })
       });
       if (res.ok) {
         setMySession(null);
@@ -102,8 +111,7 @@ export default function BinPage() {
 
   if (loading || !user) return null;
 
-  // Wait for router
-  if (!router.isReady) return (
+  if (!binId) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ color: 'var(--muted)' }}>Се вчитува...</p>
     </div>
@@ -115,14 +123,14 @@ export default function BinPage() {
 
   return (
     <>
-      <Head><title>Канта #{id} · Smart Eco Points</title></Head>
+      <Head><title>Канта #{binId} · Smart Eco Points</title></Head>
       <div className="orb orb1" /><div className="orb orb2" />
       <div className="page-wrap">
         <Topbar user={user} />
         <main style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px' }}>
 
           <div style={{ marginBottom: 28, textAlign: 'center' }}>
-            <h1 style={{ fontFamily: 'Syne,sans-serif', fontSize: 28, fontWeight: 800 }}>🗑️ Паметна Канта #{id}</h1>
+            <h1 style={{ fontFamily: 'Syne,sans-serif', fontSize: 28, fontWeight: 800 }}>🗑️ Паметна Канта #{binId}</h1>
             <p style={{ color: 'var(--muted)', marginTop: 6 }}>Активирај сесија, фрли предмет, освои поен</p>
           </div>
 
