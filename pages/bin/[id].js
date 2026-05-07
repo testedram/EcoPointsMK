@@ -40,7 +40,9 @@ export default function BinPage() {
   return (
     <>
       <Head><title>Канта #1 · Smart Eco Points</title></Head>
+
       <div className="orb orb1" /><div className="orb orb2" />
+
       <div className="page-wrap">
         <nav className="topbar">
           <div className="topbar-logo">
@@ -50,6 +52,7 @@ export default function BinPage() {
         </nav>
 
         <main style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px' }}>
+
           <div style={{ marginBottom: 28, textAlign: 'center' }}>
             <h1 style={{ fontFamily: 'Syne,sans-serif', fontSize: 28, fontWeight: 800 }}>🗑️ Паметна Канта #1</h1>
             <p style={{ color: 'var(--muted)', marginTop: 6 }}>Активирај сесија, фрли предмет, освои поен</p>
@@ -124,6 +127,7 @@ export default function BinPage() {
               </div>
             ))}
           </div>
+
         </main>
       </div>
 
