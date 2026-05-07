@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Head from 'next/head';
 
 export default function BinPage() {
   const [started, setStarted] = useState(false);
   const [countdown, setCountdown] = useState(30);
-  const [points, setPoints] = useState(0);
   const [toast, setToast] = useState(null);
   const timerRef = useRef(null);
 
@@ -36,24 +35,12 @@ export default function BinPage() {
     showToast('Сесијата е завршена ✅');
   }
 
-  // Симулирај поен на секои 5 секунди кога е активна сесија
-  useEffect(() => {
-    if (!started) return;
-    const iv = setInterval(() => {
-      setPoints(p => p + 1);
-      showToast('+1 поен добиен! ♻️');
-    }, 5000);
-    return () => clearInterval(iv);
-  }, [started]);
-
   const progressPct = (countdown / 30) * 100;
 
   return (
     <>
       <Head><title>Канта #1 · Smart Eco Points</title></Head>
-
       <div className="orb orb1" /><div className="orb orb2" />
-
       <div className="page-wrap">
         <nav className="topbar">
           <div className="topbar-logo">
@@ -63,7 +50,6 @@ export default function BinPage() {
         </nav>
 
         <main style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px' }}>
-
           <div style={{ marginBottom: 28, textAlign: 'center' }}>
             <h1 style={{ fontFamily: 'Syne,sans-serif', fontSize: 28, fontWeight: 800 }}>🗑️ Паметна Канта #1</h1>
             <p style={{ color: 'var(--muted)', marginTop: 6 }}>Активирај сесија, фрли предмет, освои поен</p>
@@ -123,17 +109,6 @@ export default function BinPage() {
             )}
           </div>
 
-          <div className="card" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 12, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Поени оваа сесија</div>
-            <div className="pts-big">{points}</div>
-            <div style={{ marginTop: 14 }}>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{ width: `${Math.min(100, (points / 10) * 100)}%` }} />
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>{Math.max(0, 10 - points)} поени до следната награда</div>
-            </div>
-          </div>
-
           <div className="card" style={{ marginTop: 20 }}>
             <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, marginBottom: 16 }}>Kako работи?</div>
             {[
@@ -149,7 +124,6 @@ export default function BinPage() {
               </div>
             ))}
           </div>
-
         </main>
       </div>
 
